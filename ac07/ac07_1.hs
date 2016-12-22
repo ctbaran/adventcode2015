@@ -97,11 +97,11 @@ evalCircuit circuit (label, (Nothing, gate)) =
             (val, Map.insert label (Just val, gate) newCircuit)
             where (val, newCircuit) = evalShift circuit in1 (-shiftVal)
 
-lookupKey :: Map.Map String (Maybe Word16, Gate) -> String -> (String, (Maybe Word16, Gate))
+lookupKey :: Map.Map String (Maybe Word16, Gate) -> String -> Word16
 lookupKey circuit key =
     case Map.lookup key circuit of
-        Just val -> (key, val)
-        Nothing -> error $ key ++ " not in circuit"
+        Just (Just val, _) -> val
+        _ -> error $ key ++ " not in circuit or couldn't be evaluated"
 
 main :: IO ()
 main = do 
@@ -111,4 +111,5 @@ main = do
         circuit = Map.fromList gates
         evalStart circuit start = snd $ evalCircuit circuit start
         values = foldl evalStart circuit $ Map.toList circuit
+
     print $ lookupKey values "a"
