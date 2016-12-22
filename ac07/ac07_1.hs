@@ -33,13 +33,14 @@ parseGate words =
         in1:"AND":in2:_:out:[] -> (out, (Nothing, AND (readWord16 in1) (readWord16 in2)))
         in1:"OR":in2:_:out:[] -> (out, (Nothing, OR (readWord16 in1) (readWord16 in2)))
         in1:"LSHIFT":shift:_:out:[] -> (out, (Nothing, LSHIFT (readWord16 in1) (read shift :: Int)))
-        in1:"RSHIFT":shift:_:out:[] -> (out, (Nothing, RSHIFT (readWord16 in1) (- read shift :: Int)))
+        in1:"RSHIFT":shift:_:out:[] -> (out, (Nothing, RSHIFT (readWord16 in1) (read shift :: Int)))
         _ -> error "Bad gate descriptor"
 
 lookupLabel :: Map.Map String (Maybe Word16, Gate) -> String -> (Word16, (Map.Map String (Maybe Word16, Gate)))
-lookupLabel circuit label = 
+lookupLabel circuit label =
     case Map.lookup label circuit of
-        Just (Just val, _) -> (val, circuit)
+        Just (Just val, _) -> 
+            (val, circuit)
         Just (Nothing, gate) ->
             (val, Map.insert label (Just val, gate) newCircuit)
             where (val, newCircuit) = evalCircuit circuit (label, (Nothing, gate))
@@ -71,7 +72,7 @@ evalTwo circuit in1 in2 fn =
         (Left label1, Left label2) ->
             (fn val1 val2, newCircuit2)
             where (val1, newCircuit) = lookupLabel circuit label1
-                  (val2, newCircuit2) = lookupLabel circuit label2
+                  (val2, newCircuit2) = lookupLabel newCircuit label2
 
 evalCircuit :: Map.Map String (Maybe Word16, Gate) -> (String, (Maybe Word16, Gate)) -> (Word16, (Map.Map String (Maybe Word16, Gate)))
 evalCircuit circuit (label, (Just x, _)) = (x, circuit)
@@ -87,7 +88,7 @@ evalCircuit circuit (label, (Nothing, gate)) =
             (val, Map.insert label (Just val, gate) newCircuit)
             where (val, newCircuit) = evalTwo circuit in1 in2 (.|.)
         NOT in1 ->
-             (val, Map.insert label (Just val, gate) newCircuit)
+            (val, Map.insert label (Just val, gate) newCircuit)
             where (val, newCircuit) = evalSingle circuit in1 complement
         LSHIFT in1 shiftVal ->
             (val, Map.insert label (Just val, gate) newCircuit)
@@ -104,9 +105,10 @@ lookupKey circuit key =
 
 main :: IO ()
 main = do 
-    gatesFile <- readFile "input.txt"
+    file <- getLine
+    gatesFile <- readFile file
     let gates = map parseGate $ map words $ lines gatesFile
         circuit = Map.fromList gates
-        --evalStart circuit start = snd $ evalCircuit circuit start
-        --values = foldl evalStart circuit $ Map.toList circuit
-    print $ evalCircuit circuit $ lookupKey circuit "a"
+        evalStart circuit start = snd $ evalCircuit circuit start
+        values = foldl evalStart circuit $ Map.toList circuit
+    print $ lookupKey values "a"
